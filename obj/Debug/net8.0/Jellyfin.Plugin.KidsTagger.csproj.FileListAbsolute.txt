@@ -1,0 +1,5 @@
+/root/Jellyfin.Plugin.KidsTagger/obj/Debug/net8.0/Jellyfin.Plugin.KidsTagger.csproj.AssemblyReference.cache
+/root/Jellyfin.Plugin.KidsTagger/obj/Debug/net8.0/Jellyfin.Plugin.KidsTagger.GeneratedMSBuildEditorConfig.editorconfig
+/root/Jellyfin.Plugin.KidsTagger/obj/Debug/net8.0/Jellyfin.Plugin.KidsTagger.AssemblyInfoInputs.cache
+/root/Jellyfin.Plugin.KidsTagger/obj/Debug/net8.0/Jellyfin.Plugin.KidsTagger.AssemblyInfo.cs
+/root/Jellyfin.Plugin.KidsTagger/obj/Debug/net8.0/Jellyfin.Plugin.KidsTagger.csproj.CoreCompileInputs.cache

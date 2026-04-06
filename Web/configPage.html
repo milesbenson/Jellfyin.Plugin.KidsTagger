@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kids Tagger</title>
+</head>
+<body>
+
+<div data-role="page" class="page type-interior pluginConfigurationPage kidsTaggerConfigPage">
+    <div data-role="content">
+        <div class="content-primary">
+
+            <form class="kidsTaggerConfigForm">
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h2 class="sectionTitle">Kids Tagger</h2>
+                </div>
+
+                <div class="verticalSection">
+                    <p>Verwaltet automatisch den Tag <b>Kids</b>.</p>
+
+                    <p><b>Filter-Libraries</b></p>
+                    <ul>
+                        <li>FSK-0 / FSK-6 / FSK-12</li>
+                        <li>Genre enthält Family / Kids / Animation</li>
+                        <li>Tag "Kids" fehlt</li>
+                    </ul>
+
+                    <p><b>Force-Libraries</b></p>
+                    <ul>
+                        <li>Alle Items bekommen den Tag <b>Kids</b></li>
+                    </ul>
+
+                    <p><b>Remove-Libraries</b></p>
+                    <ul>
+                        <li>Der Tag <b>Kids</b> wird bei allen Items entfernt</li>
+                    </ul>
+
+                    <p>Ausführen über <b>Dashboard → Geplante Aufgaben → Kids Tagger Scan</b>.</p>
+                </div>
+
+                <div class="checkboxContainer">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="DryRun" />
+                        <span>Nur Testlauf (Dry Run)</span>
+                    </label>
+                </div>
+
+                <div class="verticalSection">
+                    <h3>Bibliotheken (Filtermodus)</h3>
+                    <div id="LibrariesContainer"></div>
+                    <div class="fieldDescription">
+                        Diese Bibliotheken nutzen den FSK- und Genre-Filter.
+                    </div>
+                </div>
+
+                <div class="verticalSection">
+                    <h3>Bibliotheken (immer Kids setzen)</h3>
+                    <div id="ForceLibrariesContainer"></div>
+                    <div class="fieldDescription">
+                        Alle Items in diesen Bibliotheken bekommen den Tag "Kids".
+                    </div>
+                </div>
+
+                <div class="verticalSection">
+                    <h3>Bibliotheken (Kids immer entfernen)</h3>
+                    <div id="RemoveLibrariesContainer"></div>
+                    <div class="fieldDescription">
+                        Bei allen Items in diesen Bibliotheken wird der Tag "Kids" entfernt.
+                    </div>
+                </div>
+
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block">
+                        <span>Speichern</span>
+                    </button>
+                </div>
+
+                <div id="SaveResult" style="margin-top:1em;"></div>
+            </form>
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = "b2d7c4f3-3b9e-4b4a-8f5c-3f7c2f5f6c12";
+
+            function escapeHtml(text) {
+                return (text || "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;");
+            }
+
+            function getAllLibraries() {
+                return ApiClient.getJSON(ApiClient.getUrl("Library/VirtualFolders"));
+            }
+
+            function renderLibraries(allLibraries, selectedLibraries, forceLibraries, removeLibraries) {
+                var normalContainer = document.getElementById("LibrariesContainer");
+                var forceContainer = document.getElementById("ForceLibrariesContainer");
+                var removeContainer = document.getElementById("RemoveLibrariesContainer");
+
+                normalContainer.innerHTML = "";
+                forceContainer.innerHTML = "";
+                removeContainer.innerHTML = "";
+
+                var selected = {};
+                (selectedLibraries || []).forEach(function (name) {
+                    selected[(name || "").toLowerCase()] = true;
+                });
+
+                var forced = {};
+                (forceLibraries || []).forEach(function (name) {
+                    forced[(name || "").toLowerCase()] = true;
+                });
+
+                var removed = {};
+                (removeLibraries || []).forEach(function (name) {
+                    removed[(name || "").toLowerCase()] = true;
+                });
+
+                allLibraries.forEach(function (lib) {
+                    var name = (lib.Name || "").trim();
+                    if (!name) {
+                        return;
+                    }
+
+                    var safeName = escapeHtml(name);
+                    var key = name.toLowerCase();
+
+                    var normalChecked = selected[key] ? " checked='checked'" : "";
+                    var forceChecked = forced[key] ? " checked='checked'" : "";
+                    var removeChecked = removed[key] ? " checked='checked'" : "";
+
+                    var normalHtml =
+                        "<div class='checkboxContainer'>" +
+                            "<label>" +
+                                "<input is='emby-checkbox' type='checkbox' class='libraryCheckbox' data-library-name='" + safeName + "'" + normalChecked + " />" +
+                                "<span>" + safeName + "</span>" +
+                            "</label>" +
+                        "</div>";
+
+                    var forceHtml =
+                        "<div class='checkboxContainer'>" +
+                            "<label>" +
+                                "<input is='emby-checkbox' type='checkbox' class='forceLibraryCheckbox' data-library-name='" + safeName + "'" + forceChecked + " />" +
+                                "<span>" + safeName + "</span>" +
+                            "</label>" +
+                        "</div>";
+
+                    var removeHtml =
+                        "<div class='checkboxContainer'>" +
+                            "<label>" +
+                                "<input is='emby-checkbox' type='checkbox' class='removeLibraryCheckbox' data-library-name='" + safeName + "'" + removeChecked + " />" +
+                                "<span>" + safeName + "</span>" +
+                            "</label>" +
+                        "</div>";
+
+                    normalContainer.insertAdjacentHTML("beforeend", normalHtml);
+                    forceContainer.insertAdjacentHTML("beforeend", forceHtml);
+                    removeContainer.insertAdjacentHTML("beforeend", removeHtml);
+                });
+            }
+
+            function getSelectedLibraries() {
+                var result = [];
+                var checkboxes = document.querySelectorAll(".libraryCheckbox");
+
+                checkboxes.forEach(function (cb) {
+                    if (cb.checked) {
+                        var name = cb.getAttribute("data-library-name") || "";
+                        if (name) {
+                            result.push(name);
+                        }
+                    }
+                });
+
+                return result;
+            }
+
+            function getSelectedForceLibraries() {
+                var result = [];
+                var checkboxes = document.querySelectorAll(".forceLibraryCheckbox");
+
+                checkboxes.forEach(function (cb) {
+                    if (cb.checked) {
+                        var name = cb.getAttribute("data-library-name") || "";
+                        if (name) {
+                            result.push(name);
+                        }
+                    }
+                });
+
+                return result;
+            }
+
+            function getSelectedRemoveLibraries() {
+                var result = [];
+                var checkboxes = document.querySelectorAll(".removeLibraryCheckbox");
+
+                checkboxes.forEach(function (cb) {
+                    if (cb.checked) {
+                        var name = cb.getAttribute("data-library-name") || "";
+                        if (name) {
+                            result.push(name);
+                        }
+                    }
+                });
+
+                return result;
+            }
+
+            function loadPage() {
+                Dashboard.showLoadingMsg();
+
+                Promise.all([
+                    ApiClient.getPluginConfiguration(pluginId),
+                    getAllLibraries()
+                ]).then(function (results) {
+                    var config = results[0];
+                    var libraries = results[1] || [];
+
+                    document.getElementById("DryRun").checked = !!config.DryRun;
+
+                    renderLibraries(
+                        libraries,
+                        config.EnabledLibraries || [],
+                        config.ForceKidsLibraries || [],
+                        config.RemoveKidsLibraries || []
+                    );
+
+                    document.getElementById("SaveResult").innerHTML = "";
+                    Dashboard.hideLoadingMsg();
+                }).catch(function (err) {
+                    console.error(err);
+                    document.getElementById("SaveResult").innerHTML = "Laden fehlgeschlagen.";
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            function bindPage() {
+                var form = document.querySelector(".kidsTaggerConfigForm");
+                if (!form || form.dataset.bound === "true") {
+                    return;
+                }
+
+                form.dataset.bound = "true";
+
+                form.addEventListener("submit", function (e) {
+                    e.preventDefault();
+
+                    Dashboard.showLoadingMsg();
+
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.DryRun = document.getElementById("DryRun").checked;
+                        config.EnabledLibraries = getSelectedLibraries();
+                        config.ForceKidsLibraries = getSelectedForceLibraries();
+                        config.RemoveKidsLibraries = getSelectedRemoveLibraries();
+
+                        return ApiClient.updatePluginConfiguration(pluginId, config);
+                    }).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                        document.getElementById("SaveResult").innerHTML = "Gespeichert.";
+                        Dashboard.hideLoadingMsg();
+                        return loadPage();
+                    }).catch(function (err) {
+                        console.error(err);
+                        document.getElementById("SaveResult").innerHTML = "Speichern fehlgeschlagen.";
+                        Dashboard.hideLoadingMsg();
+                    });
+
+                    return false;
+                });
+            }
+
+            document.addEventListener("pageshow", function () {
+                var page = document.querySelector(".kidsTaggerConfigPage");
+                if (!page) {
+                    return;
+                }
+
+                bindPage();
+                loadPage();
+            });
+        })();
+    </script>
+</div>
+
+</body>
+</html>

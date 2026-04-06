@@ -1,0 +1,10 @@
+{
+  "name": "Kids Tagger",
+  "guid": "b2d7c4f3-3b9e-4b4a-8f5c-3f7c2f5f6c12",
+  "version": "1.0.0",
+  "targetAbi": "10.11.0.0",
+  "framework": "net9.0",
+  "owner": "local",
+  "description": "Automatically tags Kids content.",
+  "category": "Metadata"
+}
